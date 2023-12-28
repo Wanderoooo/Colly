@@ -1,9 +1,6 @@
 import './App.css';
 import React, {useEffect, useRef, useState} from 'react';
 import io from 'socket.io-client';
-const socket = io();
-
-// ... (import statements)
 
 function App() {
   const [text, setText] = useState('');
@@ -12,10 +9,12 @@ function App() {
   useEffect(() => {
 
     socketRef.current = io('http://localhost:4000');
-
     socketRef.current.on('textChange', (newText) => {
       setText(newText);
     });
+
+    const id = window.location.pathname.split('/').pop(); //formatted localhost/texts/{id}
+    socketRef.current.emit('getTextById', '658d10709ec0c49bb22dd122');
 
     // for all clients
     socketRef.current.on('userConnected', () => {
@@ -24,7 +23,7 @@ function App() {
 
     // for all clients
     socketRef.current.on('userDisconnected', () => {
-      console.log('User disconnected');
+      console.log('A user disconnected');
     });
 
     return () => {
