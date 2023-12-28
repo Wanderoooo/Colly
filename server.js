@@ -5,7 +5,7 @@ import cors from 'cors';
 import { MongoClient } from 'mongodb';
 import { ObjectId } from 'mongodb';
 
-const url = process.env.MONGODB_URL;
+const url = "mongodb+srv://alissalol:MooMooMilk123@colly.ogxeusv.mongodb.net/?retryWrites=true&w=majority";
 const options = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -16,7 +16,8 @@ const httpServer = createServer(app);
 app.use(cors());
 
 const saveToDatabaseDelay = 5000; // 5s save delay
-let pendingTextChange = "";
+let pendingTextChange = null;
+let textId = null;
 const client = new MongoClient(url, options);
 
 const startServer = async () => {
@@ -42,38 +43,28 @@ const startServer = async () => {
 
       socket.on('getTextById', async (id) => {
         try {
+
           const database = client.db('Colly');
           const collection = database.collection('Texts');
 
-          // Use ObjectID to convert the string ID to MongoDB ObjectID
-          const objectId = new ObjectID(id);
-
-          // Find the document by ID
+          const objectId = new ObjectId(id);
           const text = await collection.findOne({ _id: objectId });
+          console.log(text);
 
           if (text) {
-            socket.emit('textChange', text);
-          } else {
-            socket.emit('textChange', { error: 'Text not found' });
+            textId = text._id;
+            socket.emit('textChange', text.paragraph);
           }
 
         } catch (error) {
           console.error('Error fetching text by ID from MongoDB:', error);
-          // Handle error as needed
+          // Handle error
         }
       });
 
       socket.on('textChange', (newText) => {
-        console.log('Text changed:', newText);
         pendingTextChange = newText;
-        io.emit('textChange', newText);
-      });
-
-      socket.on('getData', async () => {
-        const database = client.db('Colly');
-        const collection = database.collection('Texts');
-        const data = await collection.find({}).toArray();
-        socket.emit('data', data);
+        io.emit('textChange', newText); // need to broadcast to clients with id
       });
 
       socket.on('disconnect', () => {
@@ -90,24 +81,18 @@ setInterval(async () => {
   if (pendingTextChange !== null) {
     const database = client.db('Colly');
     const collection = database.collection('Texts');
-    await collection.insertOne({ text: pendingTextChange, timestamp: new Date() });
+    const filter = { _id: textId };
+    const update = {
+      $set: {
+        paragraph: pendingTextChange,
+      },
+    };
+
+    const result = await collection.updateOne(filter, update);
 
     console.log('Text saved to the database:', pendingTextChange);
+    pendingTextChange = null;
   }
 }, saveToDatabaseDelay);
 
 startServer();
-
-
-
-
-
-io.on('connection', (socket) => {
-  console.log('a user connected');
-  socket.on('disconnect', () => {
-    console.log('user disconnected');
-  });
-
-  
-
-});

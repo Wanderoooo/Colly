@@ -14,14 +14,12 @@ function App() {
     });
 
     const id = window.location.pathname.split('/').pop(); //formatted localhost/texts/{id}
-    socketRef.current.emit('getTextById', '658d10709ec0c49bb22dd122');
+    socketRef.current.emit('getTextById', id);
 
-    // for all clients
     socketRef.current.on('userConnected', () => {
       console.log('A user connected');
     });
 
-    // for all clients
     socketRef.current.on('userDisconnected', () => {
       console.log('A user disconnected');
     });
@@ -45,4 +43,3 @@ function App() {
 }
 
 export default App;
-
