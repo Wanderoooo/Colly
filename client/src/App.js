@@ -5,16 +5,19 @@ import io from 'socket.io-client';
 function App() {
   const [text, setText] = useState('');
   const socketRef = useRef();
+  const idRef = useRef();
 
   useEffect(() => {
 
     socketRef.current = io('http://localhost:4000');
+
     socketRef.current.on('textChange', (newText) => {
+      console.log("TEXT SET");
       setText(newText);
     });
 
-    const id = window.location.pathname.split('/').pop(); //formatted localhost/texts/{id}
-    socketRef.current.emit('getTextById', id);
+    idRef.current = window.location.pathname.split('/').pop(); //formatted localhost/texts/{id} for the future
+    socketRef.current.emit('getTextById', idRef.current);
 
     socketRef.current.on('userConnected', () => {
       console.log('A user connected');
@@ -32,7 +35,11 @@ function App() {
   function handleChange(e) {
     const newText = e.target.value;
     setText(newText);
-    socketRef.current.emit('textChange', newText);
+    const payload = {
+      newText: newText,
+      idRef: idRef.current,
+    }
+    socketRef.current.emit('textChange', payload);
   }
 
   return (
