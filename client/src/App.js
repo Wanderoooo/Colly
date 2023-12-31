@@ -12,7 +12,6 @@ function App() {
     socketRef.current = io('http://localhost:4000');
 
     socketRef.current.on('textChange', (newText) => {
-      console.log("TEXT SET");
       setText(newText);
     });
 
